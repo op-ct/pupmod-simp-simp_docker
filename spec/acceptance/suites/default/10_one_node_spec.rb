@@ -71,6 +71,21 @@ describe 'docker using redhat provided packages' do
           expect(result).to match(/Thank you for using nginx/)
         end
 
+        context 'should let a user in dockerroot use docker' do
+          it 'should add a test user and put them in dockerroot' do
+            on(host, 'adduser test')
+            on(host, 'usermod -aG dockerroot test')
+            # on(host, 'newgrp dockerroot')
+          end
+          it 'should try to run containers as this user' do
+            on(host, 'runuser -l test -c "docker run hello-world"')
+            on(host, 'runuser -l test -c "docker run -d -p 8080:80 nginx"')
+
+            result = retry_on(host, 'curl localhost:8080').stdout
+            expect(result).to match(/Welcome to nginx/)
+          end
+        end
+
         it 'should stop the service' do
           run_manifest = manifest + <<-EOF
             docker::run { 'bare_nginx':
